@@ -270,11 +270,11 @@ class GymBridge(Node):
 
     def drive_timer_callback(self):
         if self.ego_drive_published and not self.has_opp:
-            self.obs, _, self.done, _ = self.env.step(
+            self.obs, _, self.done, _ = self.env.unwrapped.step(
                 np.array([[self.ego_steer, self.ego_requested_speed]])
             )
         elif self.ego_drive_published and self.has_opp and self.opp_drive_published:
-            self.obs, _, self.done, _ = self.env.step(
+            self.obs, _, self.done, _ = self.env.unwrapped.step(
                 np.array(
                     [
                         [self.ego_steer, self.ego_requested_speed],

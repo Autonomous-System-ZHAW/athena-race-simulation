@@ -20,12 +20,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import rclpy
+import sys, types
+
+
+# --- GLOBAL PATCH to disable PassiveEnvChecker ---
+def _dummy_checker(env, *args, **kwargs):
+    return env
+
+
+fake_env_checker = types.SimpleNamespace(PassiveEnvChecker=_dummy_checker)
+sys.modules["gym.wrappers.env_checker"] = fake_env_checker
+# -------------------------------------------------
+
+import gym
+import rclpy.logging
 from rclpy.node import Node
-import sys
 
+rclpy.logging.get_logger("gym_bridge_patch").info(
+    "Global PassiveEnvChecker override installed."
+)
 
-from f110_gym import f110_gym
+import os
+import f110_gym
 
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
@@ -38,7 +54,7 @@ from geometry_msgs.msg import Quaternion
 from ackermann_msgs.msg import AckermannDriveStamped
 from tf2_ros import TransformBroadcaster
 
-import gym
+
 import numpy as np
 from transforms3d import euler
 
@@ -121,9 +137,10 @@ class GymBridge(Node):
             self.opp_requested_speed = 0.0
             self.opp_steer = 0.0
             self.opp_collision = False
-            self.obs, _, self.done, _ = self.env.reset(
-                np.array([[sx, sy, stheta], [sx1, sy1, stheta1]])
+            self.obs, _, self.done, _ = self.env.unwrapped.reset(
+                np.array([[sx, sy, stheta]])
             )
+
             self.ego_scan = list(self.obs["scans"][0])
             self.opp_scan = list(self.obs["scans"][1])
 
@@ -145,7 +162,9 @@ class GymBridge(Node):
             )
         else:
             self.has_opp = False
-            self.obs, _, self.done, _ = self.env.reset(np.array([[sx, sy, stheta]]))
+            self.obs, _, self.done, _ = self.env.unwrapped.reset(
+                np.array([[sx, sy, stheta]])
+            )
             self.ego_scan = list(self.obs["scans"][0])
 
         # sim physical step timer

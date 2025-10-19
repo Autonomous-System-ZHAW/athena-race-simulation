@@ -1,7 +1,6 @@
 {
     "name": "${localWorkspaceFolderBasename}",
     "build": {
-        "context": "..",
         "dockerfile": "Dockerfile"
     },
     "remoteUser": "root",

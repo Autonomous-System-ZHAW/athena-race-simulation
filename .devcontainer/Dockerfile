@@ -12,27 +12,33 @@ RUN apt-get update --fix-missing && \
                        ros-jazzy-xacro \
                        ros-jazzy-nav2-map-server && \
     rm -rf /var/lib/apt/lists/*
+                       
+RUN apt-get upgrade -y   # safer than dist-upgrade
 
-RUN apt-get -y dist-upgrade
+# Optional: Create venv instead of system packages
+# RUN python3 -m venv /ros_env
+# RUN /ros_env/bin/pip install --upgrade pip gym transforms3d
 
-# Create a virtual environment for Python packages
-# RUN python3 -m venv /opt/ros_env
+# RUN python3 -m pip install --break-system-packages gym transforms3d
+COPY requirements.txt /requirements.txt
+RUN pip install --break-system-packages --no-deps -r /requirements.txt
 
-# Upgrade pip inside venv and install gym
-# RUN /opt/ros_env/bin/pip install --upgrade pip && \
-#    /opt/ros_env/bin/pip install gym
+WORKDIR /ros_ws/src
+COPY packages.repos .
 
-RUN python3 -m pip install --break-system-packages gym 
-RUN python3 -m pip install --break-system-packages transforms3d
-
-# ros2 gym bridge
-RUN mkdir -p sim_ws/src/f1tenth_gym_ros
-COPY . /sim_ws/src/f1tenth_gym_ros
-RUN source /opt/ros/jazzy/setup.bash && \
-    cd sim_ws/ && \
-    apt-get update --fix-missing && \
-    rosdep install -i --from-path src --rosdistro jazzy -y && \
+# Import repositories + dep install + build
+RUN vcs import < packages.repos && \
+    cd /ros_ws && \
+    apt-get update && \
+    rosdep update && \
+    rosdep install --from-paths src --ignore-src -r -y && \
+    source /opt/ros/${ROS_DISTRO}/setup.bash && \
     colcon build
 
-WORKDIR '/sim_ws'
-ENTRYPOINT ["/bin/bash"]
+# Copy your own package and rebuild
+COPY . /ros_ws/src/f1tenth_gym_ros
+RUN cd /ros_ws && \
+    apt-get update --fix-missing && \
+    rosdep install -i --from-path src --rosdistro jazzy -y && \
+    source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    colcon build

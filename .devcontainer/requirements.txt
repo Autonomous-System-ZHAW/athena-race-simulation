@@ -1,3 +1,11 @@
 bezier
 gym
 transforms3d
+gymnasium
+numba
+breathe
+llvmlite
+scipy
+pillow
+pygame
+PyOpenGL

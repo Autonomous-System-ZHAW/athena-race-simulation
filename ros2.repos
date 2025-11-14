@@ -5,11 +5,3 @@ repositories:
     url: https://github.com/Autonomous-System-ZHAW/athena-f1tenth-gym.git 
     version: main
     local-name: athena_f1tenth_gym
-
-  athena_follow_the_gap:
-    type: git
-    url: https://github.com/Autonomous-System-ZHAW/athena_follow_the_gap.git
-    version: main
-    local-name: athena_follow_the_gap
-
-  

@@ -1,54 +1,16 @@
 {
-    "name": "${localWorkspaceFolderBasename}",
+    "name": "${localWorkspaceFolderBasename} ROS2 Dev-Container",
+    "privileged": true,
+    "remoteUser": "${localEnv:USERNAME}",
     "build": {
-        "dockerfile": "Dockerfile"
+        "dockerfile": "Dockerfile.dev",
+        "args": {
+            "USERNAME": "${localEnv:USERNAME}",
+            "WS_BASENAME": "${localWorkspaceFolderBasename}"
+        }
     },
-    "remoteUser": "root",
-    "features": {
-        "ghcr.io/devcontainers/features/git": {}
-    },
-    "runArgs": [
-        // "--cap-add=SYS_PTRACE", // Allows the container to trace processes using ptrace system call
-        // "--security-opt=seccomp=unconfined", // Disables seccomp security profiles for the container
-        // "--ipc=host", // Shares the host's IPC namespace with the container
-        // "--network=host", // Shares the host's network namespace with the container
-        // "--pid=host", // Shares the host's PID namespace with the container
-        // "--privileged", // Gives the container full access to the host's devices and allows it to run with root privileges
-    ],
-    "workspaceMount": "source=${localWorkspaceFolder},target=/ros_ws/src/${localWorkspaceFolderBasename},type=bind",
-    "workspaceFolder": "/ros_ws",
-    "postCreateCommand": "apt update && rosdep update && rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -r -y && echo 'source /usr/share/bash-completion/completions/git' >> ~/.bashrc && git config --global --add safe.directory ${GIT_WORK_TREE}",
-    "postStartCommand": "/bin/bash -c 'rm -rf build/ install/ log/ && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install'",
-    "containerEnv": {
-        /* Uncomment to allow the container to access the X server on the host e.g. to run Rviz and other GUI tools
-    	"DISPLAY": "${localEnv:DISPLAY}"
-		*/
-        "ROS_DOMAIN_ID": "21",
-        "GZ_SIM_RESOURCE_PATH": "/ros_ws/src/${localWorkspaceFolderBasename}/src/",
-        "GIT_DIR": "/ros_ws/src/${localWorkspaceFolderBasename}/.git",
-        "GIT_WORK_TREE": "/ros_ws/src/${localWorkspaceFolderBasename}"
-    },
-    "mounts": [
-        /* Uncomment to allow the container to access the X server on the host e.g. to run Rviz and other GUI tools
-		{
-			"source": "/tmp/.X11-unix",
-			"target": "/tmp/.X11-unix",
-			"type": "bind"
-		},
-		{
-			"source": "${localEnv:XAUTHORITY:-$HOME/.Xauthority}",
-			"target": "/root/.Xauthority",
-			"type": "bind"
-		},
-		*/
-        /* Uncomment to persist bash history between sessions
-		{
-			"source": "${localEnv:HOME}${localEnv:USERPROFILE}/.bash_history",
-			"target": "/root/.bash_history",
-			"type": "bind"
-		}
-		*/
-    ],
+    "workspaceFolder": "/home/${localEnv:USERNAME}/ros2_ws",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/${localEnv:USERNAME}/ros2_ws/${localWorkspaceFolderBasename},type=bind",
     "customizations": {
         "vscode": {
             "settings": {
@@ -69,17 +31,30 @@
             "extensions": [
                 "mhutchie.git-graph",
                 "ms-azuretools.vscode-docker",
-                "ms-python.python",
                 "ms-python.black-formatter",
-                // "ms-python.flake8",
-                // "ms-python.pylint",
-                "ms-iot.vscode-ros"
-                // "eamodio.gitlens",
-                // "donjayamanne.githistory",
-                // "ms-python.vscode-pylance",
-                // "ms-vscode.cpptools",
-                // "ms-vscode.cpptools-extension-pack"
+                "ms-iot.vscode-ros",
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-themes",
+                "twxs.cmake",
+                "ms-python.python",
+                "ms-python.debugpy",
+                "ms-python.vscode-pylance",
+                "eamodio.gitlens",
+                "ranch-hand-robotics.rde-pack" // official ROS extension is deprecated, new one by Ranch Hand Robotics
             ]
         }
-    }
+    },
+    "containerEnv": {
+        "ROS_DOMAIN_ID": "100",
+        "GZ_SIM_RESOURCE_PATH": "/home/${localEnv:USERNAME}/ros2_ws/${localWorkspaceFolderBasename}/src"
+
+    },
+    "runArgs": [
+        "--hostname=${localWorkspaceFolderBasename}-devcontainer"
+    ],
+    "features": {
+        "ghcr.io/devcontainers/features/git": {}
+    },
+    "postCreateCommand": "bash -lc 'mkdir -p src && vcs import src < ${containerWorkspaceFolder}/${localWorkspaceFolderBasename}/ros2.repos --recursive && sudo apt-get update && rosdep update && rosdep install --from-paths . --ignore-src --rosdistro $ROS_DISTRO -r -y'",
+    "postStartCommand": "/bin/bash -c 'rm -rf build/ install/ log/ && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install'"
 }

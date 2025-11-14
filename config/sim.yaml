@@ -42,7 +42,7 @@ bridge:
     scan_beams: 1080
 
     # map parameters
-    map_path: '/ros_ws/src/athena-race-simulation/maps/global_map'
+    map_path: "~/ros2_ws/athena-race-simulation/maps/global_map"
     map_img_ext: '.png'
 
     # opponent parameters

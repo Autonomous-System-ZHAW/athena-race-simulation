@@ -49,6 +49,7 @@ from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TwistStamped
 from geometry_msgs.msg import Transform
 from geometry_msgs.msg import Quaternion
 from ackermann_msgs.msg import AckermannDriveStamped
@@ -62,6 +63,12 @@ from transforms3d import euler
 class GymBridge(Node):
     def __init__(self):
         super().__init__("gym_bridge")
+
+        qos_policy = rclpy.qos.QoSProfile(
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+            depth=1,
+        )
 
         self.declare_parameter("ego_namespace")
         self.declare_parameter("ego_odom_topic")
@@ -94,13 +101,19 @@ class GymBridge(Node):
         elif type(num_agents) != int:
             raise ValueError("num_agents should be an int.")
 
+        raw_map_path = self.get_parameter("map_path").value
+        map_path = os.path.expanduser(os.path.expandvars(raw_map_path))
+
+        map_img_ext = self.get_parameter("map_img_ext").value
+        lidar_dist = self.get_parameter("scan_distance_to_base_link").value
+
         # env backend
         self.env = gym.make(
             "f110_gym:f110-v0",
-            map=self.get_parameter("map_path").value,
-            map_ext=self.get_parameter("map_img_ext").value,
+            map=map_path,
+            map_ext=map_img_ext,
             num_agents=num_agents,
-            lidar_dist=self.get_parameter("scan_distance_to_base_link").value,
+            lidar_dist=lidar_dist,
         )
 
         sx = self.get_parameter("sx").value
@@ -207,7 +220,11 @@ class GymBridge(Node):
 
         if self.get_parameter("kb_teleop").value:
             self.teleop_sub = self.create_subscription(
-                Twist, "/cmd_vel", self.teleop_callback, 10
+                # Twist, "/cmd_vel", self.teleop_callback, 10,
+                TwistStamped,
+                "/bicycle_steer/reference",
+                self.teleop_callback,
+                qos_policy,
             )
 
     def drive_callback(self, drive_msg):
@@ -259,11 +276,15 @@ class GymBridge(Node):
         if not self.ego_drive_published:
             self.ego_drive_published = True
 
-        self.ego_requested_speed = twist_msg.linear.x
+        self.ego_requested_speed = twist_msg.twist.linear.x
 
-        if twist_msg.angular.z > 0.0:
+        self.get_logger().info(f"speed: x={twist_msg.twist.linear.x}")
+
+        self.get_logger().info(f"angular : x={twist_msg.twist.angular.z}")
+
+        if twist_msg.twist.angular.z > 0.0:
             self.ego_steer = 0.3
-        elif twist_msg.angular.z < 0.0:
+        elif twist_msg.twist.angular.z < 0.0:
             self.ego_steer = -0.3
         else:
             self.ego_steer = 0.0

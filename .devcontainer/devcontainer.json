@@ -25,7 +25,8 @@
                     "*.urdf": "xml",
                     "*.xacro": "xml",
                     "*.sdf": "xml",
-                    "*.world": "xml"
+                    "*.world": "xml",
+                    "*.repos": "yaml"
                 }
             },
             "extensions": [
